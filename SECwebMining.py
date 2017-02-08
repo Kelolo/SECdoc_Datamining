@@ -8,7 +8,13 @@ except ImportError:
 
 
 # 1. Get response from URL
-url = 'https://www.sec.gov/cgi-bin/browse-edgar?CIK=0001166559&owner=exclude&action=getcompany&Find=Search'
+DocType = '13F'
+CIK = '0001166559'
+
+urlPre = 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK='
+urlAfter = '&type=' + DocType + '&dateb=&owner=exclude&count=100'
+url = urlPre + CIK + urlAfter
+
 response = requests.get(url)
 
 # print(response.text)
