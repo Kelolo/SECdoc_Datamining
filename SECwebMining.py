@@ -36,5 +36,5 @@ for link in parsedHTML.findAll('a'):
 for url in documentsLink:
     subresponse = requests.get(url)
     subparsedHTML = BeautifulSoup(subresponse.text, "html.parser")
-    # print(subparsedHTML)
+    print(subparsedHTML)
 
