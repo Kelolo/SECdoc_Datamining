@@ -25,10 +25,16 @@ for link in parsedHTML.findAll('a'):
     usefullLink = link.get('href')
     p = re.compile("/Archives")
     m = p.match(usefullLink)
-    print(m)
+    # print(m)
     if m != None:
         documentsLink.append("".join(["https://www.sec.gov", usefullLink]))
 
-print(documentsLink)
+# print(documentsLink)
 
-# 4. For each link in the list, download required files into dir
+# 4. For each link in the list, get required files (txt)
+
+for url in documentsLink:
+    subresponse = requests.get(url)
+    subparsedHTML = BeautifulSoup(subresponse.text, "html.parser")
+    # print(subparsedHTML)
+
