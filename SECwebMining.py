@@ -70,6 +70,9 @@ url = constructURLfromCIKandDocType(CIK, DocType)
 parsedHTML = inputURLgetParsedHTML(url)
 documentsLink = findAllArchieveLink(parsedHTML) # find all 13F link
 
+# Note for no 13F found
+if len(documentsLink) == 0:
+    print("No 13F filing found for \n\tCIK/TICKER:" + str(CIK) + " \nYou can search another Ticker/CIK")
 
 for link in documentsLink:
     parsedHTML = inputURLgetParsedHTML(link)
