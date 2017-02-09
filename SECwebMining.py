@@ -46,22 +46,11 @@ def findAllRequiredFileType(parsedHTML, requiredFileType):
 
 def parseXMLFromSoupObj(fileURL):
     parsedFile = inputURLgetParsedHTML(fileURL)
-    # stringParsedFile = str(parsedFile)
+
     if str(parsedFile)[0] == '<':
         parseMethod1_AllXML(parsedFile)
-        # print(stringParsedFile)
         return
-
     parseMethod2_Ready(parsedFile)
-
-    # print(parsedFile)
-    return
-
-def cutAllXMLOut(string, start, end):
-    resXMLs = []
-    allStarts = [m.end() for m in re.finditer(start, string)]
-    allEnds = [m.start() for m in re.finditer(end, string)]
-    print(allStarts)
 
 def parseMethod1_AllXML(parsedFile):
     print("**************** All_XML **********************")
@@ -70,7 +59,9 @@ def parseMethod1_AllXML(parsedFile):
     isFirstPart = True
     allRecords = []
     if "xml" not in str(parsedFile):
-        print("NOT IN")
+        parseMethod2_Ready(parsedFile)
+        return
+
     for xml in parsedFile.find_all(re.compile("xml")):
         if (isFirstPart):
             header = ["Submission Type", "Live Test Flag", "CIK", "ccc", "Period Of Report",
@@ -129,7 +120,8 @@ def parseMethod1_AllXML(parsedFile):
 
 def parseMethod2_Ready(parsedFile):
     print("***************** Partial ready ******************")
-    return
+    for child in parsedFile.find_all(True, recursive=False):
+        print(child.text)
 
 
 # Main Program
