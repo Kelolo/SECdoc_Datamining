@@ -7,40 +7,60 @@ except ImportError:
     from bs4 import BeautifulSoup
 
 
-# 1. Get response from URL
+def constructURLfromCIKandDocType(CIK, DocType):
+    urlPre = 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK='
+    urlAfter = '&type=' + DocType + '&dateb=&owner=exclude&count=100'
+    url = urlPre + CIK + urlAfter
+    return url
+
+def inputURLgetParsedHTML(url):
+    response = requests.get(url)
+    parsedHTML = BeautifulSoup(response.text, "html.parser")
+    return parsedHTML
+
+def findAllArchieveLink(parsedHTML):
+    documentsLink = []
+
+    for link in parsedHTML.findAll('a'):
+        # print(link.get('href'))
+        usefullLink = link.get('href')
+        # print(usefullLink)
+        p = re.compile("/Archives")
+        m = p.match(usefullLink)
+        # print(m)
+        if m != None:
+            documentsLink.append("".join(["https://www.sec.gov", usefullLink]))
+    return documentsLink
+
+def findAllRequiredFileType(parsedHTML, requiredFileType):
+    documentsLink = []
+
+    for link in parsedHTML.findAll('a'):
+        # print(link.get('href'))
+        usefullLink = link.get('href')
+        # print(usefullLink)
+        p = re.compile("/Archives")
+        m = p.match(usefullLink)
+        # print(m)
+        if m != None and requiredFileType in usefullLink and (usefullLink[-5].isdigit()): # find all requiredFile type (.txt)
+            documentsLink.append("".join(["https://www.sec.gov", usefullLink]))
+    return documentsLink
+
+
+# Main Program
+
 DocType = '13F'
 CIK = '0001166559'
+requiredFileType = ".txt"
 
-urlPre = 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK='
-urlAfter = '&type=' + DocType + '&dateb=&owner=exclude&count=100'
-url = urlPre + CIK + urlAfter
+url = constructURLfromCIKandDocType(CIK, DocType)
+parsedHTML = inputURLgetParsedHTML(url)
+documentsLink = findAllArchieveLink(parsedHTML) # find all 13F link
 
-response = requests.get(url)
 
-# print(response.text)
+for link in documentsLink:
+    parsedHTML = inputURLgetParsedHTML(link)
+    RequiredFilesOfIndividual13F = findAllRequiredFileType(parsedHTML, requiredFileType) # find requiredFileType of individual 13F
+    print(RequiredFilesOfIndividual13F)
 
-# 2. Parse HTML file
-parsedHTML = BeautifulSoup(response.text, "html.parser")
-# print(parsedHTML)
-
-# 3. Find the required Link from parsed HTML and store them in a List
-documentsLink = []
-
-for link in parsedHTML.findAll('a'):
-    # print(link.get('href'))
-    usefullLink = link.get('href')
-    p = re.compile("/Archives")
-    m = p.match(usefullLink)
-    # print(m)
-    if m != None:
-        documentsLink.append("".join(["https://www.sec.gov", usefullLink]))
-
-# print(documentsLink)
-
-# 4. For each link in the list, get required files (txt)
-
-for url in documentsLink:
-    subresponse = requests.get(url)
-    subparsedHTML = BeautifulSoup(subresponse.text, "html.parser")
-    print(subparsedHTML)
-
+# print(RequiredFilesOfIndividual13F)
