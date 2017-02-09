@@ -1,26 +1,27 @@
 import requests
-import urllib
-import xml.etree.cElementTree as et
+import sys
 from tabulate import tabulate
-# from xml.dom import minidom
 import re
 try:
     from BeautifulSoup import BeautifulSoup
 except ImportError:
     from bs4 import BeautifulSoup
-# https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001166559&type=13F&dateb=&owner=exclude&count=100
 
+
+# Use different CIK/Ticker to construct the initial searching link
 def constructURLfromCIKandDocType(CIK, DocType):
     urlPre = 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK='
     urlAfter = '&type=' + DocType + '&dateb=&owner=exclude&count=100'
     url = urlPre + CIK + urlAfter
     return url
 
+# input an URL and return a parsed HTML as a BeautifulSoup object
 def inputURLgetParsedHTML(url):
     response = requests.get(url)
     parsedHTML = BeautifulSoup(response.text, "html.parser")
     return parsedHTML
 
+# this function will return all 13F links as list
 def findAllArchieveLink(parsedHTML):
     documentsLink = []
 
@@ -32,6 +33,7 @@ def findAllArchieveLink(parsedHTML):
             documentsLink.append("".join(["https://www.sec.gov", usefullLink]))
     return documentsLink
 
+# this function will return a list of targeted txt file link. eg. https://www.sec.gov/Archives/edgar/data/1166559/000110465914039387/0001104659-14-039387.txt
 def findAllRequiredFileType(parsedHTML, requiredFileType):
     documentsLink = []
 
@@ -39,26 +41,28 @@ def findAllRequiredFileType(parsedHTML, requiredFileType):
         usefullLink = link.get('href')
         p = re.compile("/Archives")
         m = p.match(usefullLink)
-        if m != None and requiredFileType in usefullLink and (usefullLink[-5].isdigit()): # find all requiredFile type (.txt)
+        if m != None and requiredFileType in usefullLink and (usefullLink[-5].isdigit()): # illiminate txt file with char name
             documentsLink.append("".join(["https://www.sec.gov", usefullLink]))
     return documentsLink
 
-
+# this function will parse the file Data with two methods
 def parseXMLFromSoupObj(fileURL):
     parsedFile = inputURLgetParsedHTML(fileURL)
-
-    if str(parsedFile)[0] == '<':
-        parseMethod1_AllXML(parsedFile)
+    txtFile = str(parsedFile)
+    if txtFile[0] == '<':
+        parseMethod1_AllXML(parsedFile, txtFile)
         return
     parseMethod2_Ready(parsedFile)
 
-def parseMethod1_AllXML(parsedFile):
-    print("**************** All_XML **********************")
-    # print(len(parsedFile.findAll('xml')))
-    # print(parsedFile)
+# This is method 1, which will parse files where all holdings are wraped inside xml
+def parseMethod1_AllXML(parsedFile, txtFile):
+    print("\n**********************************************************")
+    print("********************** Start OF 13F **********************")
+    print("**********************************************************\n\n")
+
     isFirstPart = True
     allRecords = []
-    if "xml" not in str(parsedFile):
+    if "xml" not in txtFile:
         parseMethod2_Ready(parsedFile)
         return
 
@@ -71,62 +75,71 @@ def parseMethod1_AllXML(parsedFile):
                       "Title", "Phone", "Sigature", "City", "State of Country", "Signature Date", "Other included managers count",
                       "Table Entry total", "Table Value Total", "Is Confidential Omitted"]
 
-            # allRecords.append(header)
             for child in xml.find_all(True, recursive=False):
                 subR = []
                 for info in child.text.split('\n'):
-                    # subR = []
+
                     if info != '':
                         subR.append(info)
-                        # if isFirst:
-                        #     oneRecord += info + "\t\t\t\t"
-                        # else:
-                        #     oneRecord += info + "\t\t\t"
-                        #     isFirst = False
-                # print(subR)
-                # allRecords.append(subR)
-                # print(child.name + ":" +child.text)
+
             for i in range (len(header)):
                 print(header[i] + ": " + subR[i])
-            print("\n$$$$$$$$$$$$$$$$$$$$$\n")
             isFirstPart = False
+
         else:
-            # print("NAME OF ISSUER" + "\t\t\t\t" + "TITLE OF CLASS" + "\t\t\t" + "CUSIP" + "\t\t\t" + "VALUE(X1000)" + "\t\t\t" + "SHARES/PRN AMOUNT" + "\t\t\t" + "SH/PRN" + "\t\t\t" + "INVESTMENT DISCRETION" + "\t\t\t" + "OTHER MANAGERS" + "\t\t\t" + "SOLE" + "\t\t\t" + "SHARED" + "\t\t\t" + "NONE" + "\t\t\t")
+            print("\n*********************************  FORM 13F INFORMATION TABLE  *********************************")
             header = ["NAME OF ISSUER", "TITLE OF CLASS", "CUSIP", "VALUE(X1000)",
                       "SHARES/PRN AMOUNT", "SH/PRN", "INVESTMENT DISCRETION", "OTHER MANAGERS", "SOLE", "SHARED", "NONE"]
             allRecords.append(header)
             for information in parsedFile.find_all(re.compile("infotable")):
-                # oneRecord = ""
-                # isFirst = True
-                # print(information.text.split('\n'))
                 subR = []
                 for info in information.text.split('\n'):
-                    # subR = []
                     if info != '':
                         subR.append(info)
-                        # if isFirst:
-                        #     oneRecord += info + "\t\t\t\t"
-                        # else:
-                        #     oneRecord += info + "\t\t\t"
-                        #     isFirst = False
-                # print(subR)
                 allRecords.append(subR)
-            # print(allRecords)
             print(tabulate(allRecords))
 
-    print("\n\n**********************************************************")
-    print("************************* END OF *************************")
+    print("\n**********************************************************")
+    print("*********************** END OF 13F ***********************")
     print("**********************************************************\n\n")
 
+
+# This is method 2, which will parse files with pre-parsed data
 def parseMethod2_Ready(parsedFile):
-    print("***************** Partial ready ******************")
+    print("\n**********************************************************")
+    print("********************** Start OF 13F **********************")
+    print("**********************************************************\n\n")
     for child in parsedFile.find_all(True, recursive=False):
         print(child.text)
+    print("\n**********************************************************")
+    print("*********************** END OF 13F ***********************")
+    print("**********************************************************\n\n")
 
 
-# Main Program
+
+########################################
+####                                ####
+####           Main Program         ####
+####                                ####
+###$$###################################
+
+############################################################################################
+#####                                                                                  #####
+#####  1. Construct URL(L1) based on CIK/Ticker (optional: can also include data type) #####
+#####  2. Parse the data in L1 (D1)                                                    #####
+#####  3. Get all 13F links from D1 (L2)                                               #####
+#####  4. Return warning if the CIK don't have any 13F filing                          #####
+#####  5. For data in each link L2, parse the data and output newly construct table    #####
+#####                                                                                  #####
+############################################################################################
+
+# CIK = input("Please Enter CIK/Ticker: ")
+if len(sys.argv) == 1:
+    CIK = input("Please Enter CIK/Ticker (eg. 0001166559): ")
+else:
+    CIK = sys.argv[1]
+
 DocType = '13F'
-CIK = '0001166559'
 requiredFileType = ".txt"
 
 url = constructURLfromCIKandDocType(CIK, DocType)
@@ -140,14 +153,5 @@ if len(documentsLink) == 0:
 for link in documentsLink:
     parsedHTML = inputURLgetParsedHTML(link)
     RequiredFilesOfIndividual13F = findAllRequiredFileType(parsedHTML, requiredFileType) # find requiredFileType of individual 13F
-    # print(RequiredFilesOfIndividual13F)
-    # print(parseXMLinformationFromFile(RequiredFilesOfIndividual13F[0]))
-
     parseXMLFromSoupObj(RequiredFilesOfIndividual13F[0])
 
-    # fileLink = RequiredFilesOfIndividual13F[0]
-    # parsedFile = inputURLgetParsedHTML(fileLink)  # beautifulSoup obj
-    # xmldoc = minidom.parseString(parsedFile)
-    # print(xmldoc)
-
-# print(RequiredFilesOfIndividual13F)
