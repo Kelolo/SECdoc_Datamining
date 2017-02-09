@@ -1,5 +1,6 @@
 import requests
 import urllib
+# from xml.dom import minidom
 import re
 try:
     from BeautifulSoup import BeautifulSoup
@@ -22,12 +23,9 @@ def findAllArchieveLink(parsedHTML):
     documentsLink = []
 
     for link in parsedHTML.findAll('a'):
-        # print(link.get('href'))
         usefullLink = link.get('href')
-        # print(usefullLink)
         p = re.compile("/Archives")
         m = p.match(usefullLink)
-        # print(m)
         if m != None:
             documentsLink.append("".join(["https://www.sec.gov", usefullLink]))
     return documentsLink
@@ -36,19 +34,34 @@ def findAllRequiredFileType(parsedHTML, requiredFileType):
     documentsLink = []
 
     for link in parsedHTML.findAll('a'):
-        # print(link.get('href'))
         usefullLink = link.get('href')
-        # print(usefullLink)
         p = re.compile("/Archives")
         m = p.match(usefullLink)
-        # print(m)
         if m != None and requiredFileType in usefullLink and (usefullLink[-5].isdigit()): # find all requiredFile type (.txt)
             documentsLink.append("".join(["https://www.sec.gov", usefullLink]))
     return documentsLink
 
 
-# Main Program
+def parseXMLFromSoupObj(fileURL):
+    parsedFile = inputURLgetParsedHTML(fileURL)
+    if str(parsedFile)[0] == '<':
+        parseMethod1_AllXML(parsedFile)
+        print(parsedFile)
+        return
 
+    parseMethod2_Ready(parsedFile)
+    print(parsedFile)
+    return
+
+
+def parseMethod1_AllXML(parsedFile):
+    print("All_XML")
+
+
+def parseMethod2_Ready(parsedFile):
+    print("Partial ready")
+
+# Main Program
 DocType = '13F'
 CIK = '0001166559'
 requiredFileType = ".txt"
@@ -61,6 +74,14 @@ documentsLink = findAllArchieveLink(parsedHTML) # find all 13F link
 for link in documentsLink:
     parsedHTML = inputURLgetParsedHTML(link)
     RequiredFilesOfIndividual13F = findAllRequiredFileType(parsedHTML, requiredFileType) # find requiredFileType of individual 13F
-    print(RequiredFilesOfIndividual13F)
+    # print(RequiredFilesOfIndividual13F)
+    # print(parseXMLinformationFromFile(RequiredFilesOfIndividual13F[0]))
+
+    parseXMLFromSoupObj(RequiredFilesOfIndividual13F[0])
+
+    # fileLink = RequiredFilesOfIndividual13F[0]
+    # parsedFile = inputURLgetParsedHTML(fileLink)  # beautifulSoup obj
+    # xmldoc = minidom.parseString(parsedFile)
+    # print(xmldoc)
 
 # print(RequiredFilesOfIndividual13F)
